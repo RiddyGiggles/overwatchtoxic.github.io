@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OW多言語チャット発行ツール - Ver 1.56</title>
+
+    <link rel="icon" href="favicon.ico" sizes="any">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+
+    <meta property="og:title" content="OW多言語チャット発行ツール">
+    <meta property="og:description" content="ボイスチャットできないあなたに。ワンクリックで多言語チャットを発行できます。英語、韓国語、中国語に対応。">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f1823;
+            --card-bg: #1e2a3a;
+            --accent-orange: #f99e1a;
+            --accent-blue: #00e5ff;
+            --text-main: #ffffff;
+            --text-sub: #aab6c2;
+            --handle-color: #38495f;
+            --header-bg: rgba(255, 255, 255, 0.1);
+            --font-main: 'Montserrat', 'Segoe UI', 'Roboto', sans-serif;
+            --font-jp: 'Noto Sans JP', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: linear-gradient(135deg, #0f1823 0%, #1a2b3e 100%);
+            color: var(--text-main);
+            font-family: var(--font-main), var(--font-jp);
+            margin: 0; padding: 10px;
+            display: flex; flex-direction: column; align-items: center;
+            min-height: 100vh; overflow-x: hidden;
+            background-attachment: fixed;
+        }
+
+        body.mode-kr { background-image: linear-gradient(135deg, #16162e 0%, #251b3a 100%); }
+        body.mode-zh { background-image: linear-gradient(135deg, #0f2e1b 0%, #1a3e26 100%); }
+        body.mode-toxic { background-image: linear-gradient(135deg, #2e0f0f 0%, #3e1a1a 100%); }
+
+        header { 
+            position: relative; text-align: center; margin-bottom: 15px; 
+            border-bottom: 3px solid var(--accent-orange); padding-bottom: 8px; 
+            width: 100%; max-width: 1000px;
+        }
+        
+        h1 { font-size: 1.8rem; letter-spacing: 1px; margin: 0; color: #fff; font-weight: 900; font-style: normal; text-shadow: 2px 2px 0px rgba(0,0,0,0.5); }
+        .subtitle { font-size: 0.8rem; color: var(--accent-orange); font-weight: 800; letter-spacing: 0.5px; margin-top: 4px; font-style: normal; }
+
+        .guide-container {
+            max-width: 1000px; width: 100%;
+            background: rgba(0,0,0,0.2); border-radius: 4px;
+            padding: 12px; margin-bottom: 20px;
+            display: flex; justify-content: center;
+            font-size: 0.8rem; color: var(--text-sub);
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .guide-steps { display: flex; justify-content: center; gap: 25px; flex-wrap: wrap; }
+        .guide-step { display: flex; align-items: center; gap: 8px; font-size: 0.75rem; font-weight: 700; }
+        .step-num { background: var(--accent-orange); color: #000; font-weight: 900; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; }
+
+        .top-right-controls {
+            position: absolute; right: 0; top: 10px;
+            display: flex; flex-direction: column; align-items: flex-end; gap: 5px;
+        }
+
+        .toxic-toggle-btn {
+            background: rgba(255, 0, 0, 0.1); border: 1px solid rgba(255, 0, 0, 0.3);
+            color: #ff6b6b; padding: 6px 12px; border-radius: 4px;
+            cursor: pointer; font-size: 0.7rem; font-weight: bold; transition: all 0.2s;
+            font-family: var(--font-main);
+        }
+        .toxic-toggle-btn.active { background: #ff4b4b; color: #fff; border-color: #fff; box-shadow: 0 0 10px rgba(255,0,0,0.5); }
+
+        .full-reset-btn {
+            background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2);
+            color: var(--text-sub); padding: 6px 12px; border-radius: 4px;
+            cursor: pointer; font-size: 0.7rem; font-weight: bold; transition: all 0.2s;
+            z-index: 100;
+        }
+        .full-reset-btn:hover { background: rgba(249, 158, 26, 0.2); color: #fff; border-color: var(--accent-orange); }
+
+        .tab-container { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center; }
+        .tab-btn {
+            background: rgba(255, 255, 255, 0.1); border: 2px solid transparent;
+            color: var(--text-sub); padding: 8px 15px; border-radius: 4px;
+            cursor: pointer; font-weight: 900; font-style: normal; transition: all 0.3s ease;
+            font-size: 0.85rem;
+            font-family: var(--font-main), var(--font-jp);
+        }
+        .tab-btn.active { border-color: var(--accent-orange); color: #fff; background: rgba(249, 158, 26, 0.2); }
+
+        .columns-wrapper { display: flex; flex-direction: row; gap: 15px; width: 100%; max-width: 1400px; justify-content: center; }
+        .category-column { flex: 1; min-width: 260px; background: rgba(255, 255, 255, 0.05); border-radius: 4px; padding: 10px; display: flex; flex-direction: column; gap: 10px; min-height: 500px; }
+        
+        .category-column.toxic-only { display: none; }
+        body.mode-toxic .category-column:not(.toxic-only) { display: none; }
+        body.mode-toxic .category-column.toxic-only { display: flex; }
+
+        .category-header { 
+            display: flex; justify-content: center; align-items: center; 
+            background: var(--header-bg); padding: 10px; border-radius: 2px; 
+            margin-bottom: 5px; position: relative; border-left: 4px solid var(--accent-orange); 
+        }
+        
+        .title-display { display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 900; font-style: normal; }
+        .edit-icon { color: var(--accent-orange); font-size: 0.9rem; opacity: 0.7; }
+        .category-title-text { font-size: 0.95rem; color: #fff; letter-spacing: 1px; }
+
+        .title-input {
+            display: none; background: rgba(0,0,0,0.5); color: #fff;
+            border: 1px solid var(--accent-orange); padding: 2px 10px;
+            font-size: 0.95rem; text-align: center; font-weight: 900; font-style: normal;
+            width: 80%; outline: none; border-radius: 2px;
+            font-family: var(--font-jp);
+        }
+
+        .reset-btn-container { position: absolute; right: 8px; }
+        .reset-btn { background: none; border: none; color: var(--accent-orange); cursor: pointer; font-size: 1.1rem; padding: 4px; display: flex; align-items: center; justify-content: center; }
+        .reset-btn span { transition: transform 0.3s ease; display: inline-block; }
+        .reset-btn:hover span { transform: rotate(-180deg); color: #fff; }
+
+        .phrase-card { background: var(--card-bg); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 2px; display: flex; align-items: center; position: relative; overflow: hidden; user-select: none; box-shadow: 2px 2px 0px rgba(0,0,0,0.3); }
+        .drag-handle { display: flex; align-items: center; justify-content: center; width: 30px; align-self: stretch; background: rgba(0, 0, 0, 0.3); color: var(--handle-color); cursor: grab; font-size: 1.2rem; }
+        .card-content { flex: 1; padding: 11px 12px; cursor: pointer; }
+        .card-content:hover { background: rgba(255, 255, 255, 0.05); }
+
+        .japanese { display: block; font-size: 0.85rem; font-weight: 700; margin-bottom: 3px; color: #fff; }
+        .preview-text { display: block; font-size: 0.75rem; color: var(--accent-blue); font-family: var(--font-main); font-weight: 700; }
+
+        .copy-overlay { position: absolute; inset: 0 0 0 30px; background: var(--accent-orange); color: #fff; display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: opacity 0.1s; font-weight: 900; font-style: normal; font-size: 0.8rem; font-family: var(--font-main); }
+        .phrase-card.copied .copy-overlay { opacity: 1; }
+        .dragging { opacity: 0.5; z-index: 1000; position: fixed !important; pointer-events: none; }
+
+        footer {
+            margin-top: 40px; padding: 20px; text-align: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            width: 100%; max-width: 800px;
+        }
+        .disclaimer {
+            font-size: 0.7rem; color: var(--text-sub); line-height: 1.6;
+            font-family: var(--font-jp); font-weight: 400;
+        }
+
+        @media (max-width: 800px) { 
+            .columns-wrapper { flex-direction: column; } 
+            .top-right-controls { position: static; align-items: center; margin-bottom: 10px; } 
+            .guide-steps { flex-direction: column; align-items: flex-start; gap: 8px; }
+        }
+    </style>
+</head>
+<body id="app-body">
+
+<header>
+    <h1>OW多言語チャット発行ツール</h1>
+    <div class="subtitle">⠿ を掴んで並び替え | ワンクリックでコピー</div>
+    
+    <div class="top-right-controls">
+        <button id="toxic-btn" class="toxic-toggle-btn" onclick="toggleToxicMode()">他責モード</button>
+        <button id="main-reset-btn" class="full-reset-btn" onclick="resetAllCardsPosition()">すべてのカードを初期位置に戻す</button>
+    </div>
+</header>
+
+<div class="guide-container">
+    <div class="guide-steps">
+        <div class="guide-step"><span class="step-num">1</span> 使いたい文をクリックしてコピー</div>
+        <div class="guide-step"><span class="step-num">2</span> ゲームのチャット欄(Enter)を開く</div>
+        <div class="guide-step"><span class="step-num">3</span> Ctrl + V で貼り付けて送信！</div>
+    </div>
+</div>
+
+<div class="tab-container">
+    <button id="tab-en" class="tab-btn active" onclick="switchMode('en')">日本語 → 英語</button>
+    <button id="tab-kr" class="tab-btn" onclick="switchMode('kr')">日本語 → 韓国語</button>
+    <button id="tab-zh" class="tab-btn" onclick="switchMode('zh')">日本語 → 中国語</button>
+</div>
+
+<div class="columns-wrapper" id="columns-container"></div>
+
+<footer>
+    <div class="disclaimer">
+        ※本サイトはジョークサイトです。チャットでの発言はすべて自己責任で行ってください。<br>
+        本ツールを使用して発生したトラブルやアカウント制限等について、当サイトは一切の責任を負いません。
+    </div>
+</footer>
+
+<script>
+    const STORAGE_KEY = 'ow_trans_v1_56_pos'; 
+    const categories = [
+        { id: 'col-greet', title: '挨拶・励まし', toxic: false },
+        { id: 'col-strat', title: '戦略・指示', toxic: false },
+        { id: 'col-enemy', title: '敵の情報', toxic: false },
+        { id: 'col-team', title: '味方の情報', toxic: false },
+        { id: 'tox-tank', title: 'タンクへ', toxic: true },
+        { id: 'tox-dps', title: 'ダメージへ', toxic: true },
+        { id: 'tox-sup', title: 'サポートへ', toxic: true },
+        { id: 'tox-enemy', title: '敵チームへ', toxic: true }
+    ];
+
+    const phrases = {
+        g1: { jp: "みんなお疲れ様", en: "Good job team.", kr: "수고하셨어요.", zh: "大家辛苦了。", col: "col-greet", order: 1 },
+        g2: { jp: "惜しい！", en: "Nice try.", kr: "아까워요!", zh: "好可惜！", col: "col-greet", order: 2 },
+        g3: { jp: "まだ勝てるよ！", en: "We can win this!", kr: "아직 이길 수 있어요!", zh: "还能赢！", col: "col-greet", order: 3 },
+        g4: { jp: "あと一回当たれる", en: "One more fight.", kr: "한 타 더 가능해요.", zh: "还能再打一波。", col: "col-greet", order: 4 },
+        g5: { jp: "最高のチームだね！", en: "We are nice team!", kr: "우리 팀 최고!", zh: "咱们队伍真厉害！", col: "col-greet", order: 5 },
+        s1: { jp: "集合しよう", en: "Grouping up.", kr: "모여요.", zh: "大家来集合吧。", col: "col-strat", order: 1 },
+        s2: { jp: "拠点を踏んで！", en: "Touch the point!", kr: "거점 밟아주세요!", zh: "快去踩点！", col: "col-strat", order: 2 },
+        s3: { jp: "ペイロードを止めて！", en: "Stop the payload!", kr: "화물 막아주세요!", zh: "快去车边！", col: "col-strat", order: 3 },
+        s4: { jp: "高台に行こう", en: "Go High ground.", kr: "고지대로 가죠.", zh: "咱们上高台吧。", col: "col-strat", order: 4 },
+        s5: { jp: "裏取りするよ", en: "Flanking.", kr: "뒤 돌게요.", zh: "去绕后。", col: "col-strat", order: 5 },
+        s6: { jp: "フランカーに注意", en: "Watch out for flankers.", kr: "플랭커 조심하세요.", zh: "小心绕后。", col: "col-strat", order: 6 },
+        e1: { jp: "敵タンクのウルトが溜まっている", en: "Enemy tank has Ult.", kr: "상대 탱커 궁 있어요.", zh: "对面坦有大。", col: "col-enemy", order: 1 },
+        e2: { jp: "龍撃剣に注意", en: "Genji has Dragonblade.", kr: "겐지 용검 조심.", zh: "小心源氏拔刀。", col: "col-enemy", order: 2 },
+        e3: { jp: "EMPに注意", en: "Sombra has EMP.", kr: "솜브라 EMP 조심.", zh: "小心黑影EMP。", col: "col-enemy", order: 3 },
+        e4: { jp: "デスブロッサムに注意", en: "Reaper has Death Blossom.", kr: "리퍼 죽꽃 조심.", zh: "小心死神大招。", col: "col-enemy", order: 4 },
+        e5: { jp: "ボブに注意", en: "Ashe has B.O.B.", kr: "밥 온다 조심.", zh: "小心鲍勃。", col: "col-enemy", order: 5 },
+        e6: { jp: "ルシオのビートに注意", en: "Lucio has Sound Barrier.", kr: "루시오 비트 조심.", zh: "对面DJ有音障。", col: "col-enemy", order: 6 },
+        e7: { jp: "敵はウルトないよ", en: "Enemy has no Ults.", kr: "상대 궁 없어요.", zh: "对面没大。", col: "col-enemy", order: 7 },
+        t1: { jp: "ウルト準備完了", en: "My Ult is ready.", kr: "궁극기 준비됨.", zh: "我有大了。", col: "col-team", order: 1 },
+        t2: { jp: "次の当たり合いでウルト使おう", en: "Use Ults next fight.", kr: "다음 한 타에 궁 쓰죠.", zh: "下波就交大招吧。", col: "col-team", order: 2 },
+        t3: { jp: "ウルト全部吐かないで", en: "Don't use all Ults.", kr: "궁 다 쓰지 마세요.", zh: "别交所有大招。", col: "col-team", order: 3 },
+        t4: { jp: "私にナノブーストをつけてください", en: "Nano me please.", kr: "나노 주세요.", zh: "可以给我激素吗？", col: "col-team", order: 4 },
+
+        xt1: { jp: "タンク弱すぎ", en: "Nice tanking!", kr: "탱커님 나이스!", zh: "坦克打得好！", col: "tox-tank", order: 1 },
+        xt2: { jp: "前でろや", en: "Let's push together.", kr: "함께 들어가요.", zh: "我们一起往前吧。", col: "tox-tank", order: 2 },
+        xt3: { jp: "後ろ見れない？", en: "Care for our backline.", kr: "뒷라인 케어 부탁해요.", zh: "请保保后排辅助吧。", col: "tox-tank", order: 3 },
+        xt4: { jp: "全然エリア取れてないけど、人生後ろ向きですか？", en: "Let's take space together.", kr: "거점 먹으러 가요.", zh: "我们还是快去占点吧。", col: "tox-tank", order: 4 },
+        xd1: { jp: "DPS弱すぎ", en: "Nice DPS!", kr: "딜러님 나이스!", zh: "输出位给力！", col: "tox-dps", order: 1 },
+        xd2: { jp: "ダメージ出せよ", en: "Good focus.", kr: "포커싱 좋아요.", zh: "集火做得很好。", col: "tox-dps", order: 2 },
+        xd3: { jp: "回復要請しかできませんか？", en: "I'll heal you soon!", kr: "곧 힐 드릴게요!", zh: "马上就奶你！", col: "tox-dps", order: 3 },
+        xd4: { jp: "ダメージでてないしリアルでも影響力なさそう", en: "Let's focus on taking sides.", kr: "사이드 같이 먹어봐요.", zh: "注意拉开枪线。", col: "tox-dps", order: 4 },
+        xs1: { jp: "サポ弱すぎ", en: "Nice healing!", kr: "힐러님 나이스!", zh: "奶妈辛苦了！", col: "tox-sup", order: 1 },
+        xs2: { jp: "回復足りませんが", en: "I need a bit more heal.", kr: "힐 조금만 더 부탁해요.", zh: "我想多要一点奶。", col: "tox-sup", order: 2 },
+        xs3: { jp: "回復だけしてるの弱いから", en: "Good support utility.", kr: "希望辅助也能多打点伤害！", col: "tox-sup", order: 3 },
+        xs4: { jp: "医者はいないのか？ヤブ医者はいるのに", en: "Let's play slow with heals.", kr: "힐 받으면서 천천히 해요.", zh: "拿到治療后再稳着打。", col: "tox-sup", order: 4 },
+        xe1: { jp: "敵弱すぎ", en: "GG WP! Great game.", kr: "정말 좋은 경기였어요.", zh: "打得好，精彩的比赛。", col: "tox-enemy", order: 1 },
+        xe2: { jp: "簡単なゲームだ", en: "That was a fun match.", kr: "즐거운 경기였습니다.", zh: "这是一場有趣的对局。", col: "tox-enemy", order: 2 },
+        xe3: { jp: "練習にもならない", en: "Good game everyone.", kr: "모두 수고하셨습니다.", zh: "大家打得都不錯。", col: "tox-enemy", order: 3 },
+        xe4: { jp: "敵を一切見なかったんだけど観光地ですか？", en: "Nice game! Hope to see you again somewhere.", kr: "즐거운 게임이었어요! 다음에 또 만나요.", zh: "是一場精彩的比賽！期待下次再見。", col: "tox-enemy", order: 4 }
+    };
+
+    let currentMode = 'en';
+    let isToxicMode = false;
+    let isDragging = false;
+    let draggingElement = null;
+    let startColumn = null;
+    let placeholder = document.createElement('div');
+    placeholder.style.height = '48px'; placeholder.style.border = '1px dashed #f99e1a';
+
+    function initUI() {
+        const container = document.getElementById('columns-container');
+        container.innerHTML = '';
+        categories.forEach(cat => {
+            const col = document.createElement('div');
+            col.className = `category-column ${cat.toxic ? 'toxic-only' : ''}`;
+            col.id = cat.id;
+            col.innerHTML = `
+                <div class="category-header">
+                    <div class="title-display" id="display-${cat.id}" onclick="startEdit('${cat.id}')">
+                        <span class="edit-icon">✎</span>
+                        <span class="category-title-text" id="text-${cat.id}">${cat.title}</span>
+                    </div>
+                    <input type="text" class="title-input" id="input-${cat.id}" value="${cat.title}" onblur="stopEdit('${cat.id}')" onkeydown="if(event.key==='Enter')this.blur()">
+                    <div class="reset-btn-container">
+                        <button class="reset-btn" onclick="resetColumn('${cat.id}')"><span>↺</span></button>
+                    </div>
+                </div>
+            `;
+            container.appendChild(col);
+        });
+
+        Object.keys(phrases).forEach(id => {
+            const data = phrases[id];
+            const card = document.createElement('div');
+            card.className = 'phrase-card';
+            card.dataset.id = id;
+            card.dataset.defCol = data.col;
+            card.dataset.defOrder = data.order;
+            card.innerHTML = `
+                <div class="drag-handle">⠿</div>
+                <div class="card-content" onclick="handleCopy(this.parentElement, '${id}')">
+                    <span class="japanese">${data.jp}</span>
+                    <span class="preview-text" id="p-${id}">${data[currentMode]}</span>
+                </div>
+                <div class="copy-overlay">COPIED!</div>
+            `;
+            document.getElementById(data.col).appendChild(card);
+        });
+    }
+
+    function toggleToxicMode() {
+        isToxicMode = !isToxicMode;
+        const toxicBtn = document.getElementById('toxic-btn');
+        const resetBtn = document.getElementById('main-reset-btn');
+        document.body.classList.toggle('mode-toxic', isToxicMode);
+        toxicBtn.classList.toggle('active', isToxicMode);
+        resetBtn.innerText = isToxicMode ? "他責モードの全位置をリセット" : "すべてのカードを初期位置に戻す";
+    }
+
+    function startEdit(id) {
+        document.getElementById('display-' + id).style.display = 'none';
+        const input = document.getElementById('input-' + id);
+        input.style.display = 'block';
+        input.focus();
+    }
+
+    function stopEdit(id) {
+        const input = document.getElementById('input-' + id);
+        const text = document.getElementById('text-' + id);
+        text.innerText = input.value;
+        input.style.display = 'none';
+        document.getElementById('display-' + id).style.display = 'flex';
+        saveState();
+    }
+
+    function switchMode(mode) {
+        currentMode = mode;
+        document.body.classList.remove('mode-kr', 'mode-zh');
+        if(mode === 'kr') document.body.classList.add('mode-kr');
+        if(mode === 'zh') document.body.classList.add('mode-zh');
+        document.getElementById('tab-en').classList.toggle('active', mode === 'en');
+        document.getElementById('tab-kr').classList.toggle('active', mode === 'kr');
+        document.getElementById('tab-zh').classList.toggle('active', mode === 'zh');
+        Object.keys(phrases).forEach(id => {
+            const el = document.getElementById('p-' + id);
+            if (el) el.innerText = phrases[id][mode];
+        });
+    }
+
+    function handleCopy(el, id) {
+        if (isDragging) return;
+        navigator.clipboard.writeText(phrases[id][currentMode]).then(() => {
+            el.classList.add('copied');
+            setTimeout(() => el.classList.remove('copied'), 600);
+        });
+    }
+
+    function saveState() {
+        const state = { columns: {}, titles: {} };
+        document.querySelectorAll('.category-column').forEach(col => {
+            state.columns[col.id] = [...col.querySelectorAll('.phrase-card')].map(c => c.dataset.id);
+            state.titles[col.id] = document.getElementById('text-' + col.id).innerText;
+        });
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function resetColumn(colId) {
+        const col = document.getElementById(colId);
+        const cards = [...document.querySelectorAll('.phrase-card')].filter(c => c.dataset.defCol === colId);
+        cards.sort((a, b) => a.dataset.defOrder - b.dataset.defOrder);
+        cards.forEach(c => col.appendChild(c));
+        saveState();
+    }
+
+    function resetAllCardsPosition() {
+        const modeText = isToxicMode ? "他責モードの全カード" : "通常モードの全カード";
+        if (!confirm(`${modeText}の配置を初期状態に戻しますか？`)) return;
+        categories.forEach(cat => {
+            if (isToxicMode === cat.toxic) resetColumn(cat.id);
+        });
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+        initUI();
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+            const state = JSON.parse(saved);
+            if (state.titles) Object.keys(state.titles).forEach(id => {
+                const textEl = document.getElementById('text-' + id);
+                if (textEl) textEl.innerText = state.titles[id];
+            });
+            if (state.columns) Object.keys(state.columns).forEach(colId => {
+                const col = document.getElementById(colId);
+                if (col) state.columns[colId].forEach(cardId => {
+                    const card = document.querySelector(`[data-id="${cardId}"]`);
+                    if (card) col.appendChild(card);
+                });
+            });
+        }
+    });
+
+    document.addEventListener('mousedown', e => {
+        const handle = e.target.closest('.drag-handle');
+        if (!handle) return;
+        isDragging = true;
+        draggingElement = handle.closest('.phrase-card');
+        startColumn = draggingElement.closest('.category-column');
+        const rect = draggingElement.getBoundingClientRect();
+        const offsetX = e.clientX - rect.left;
+        const offsetY = e.clientY - rect.top;
+        draggingElement.classList.add('dragging');
+        draggingElement.parentNode.insertBefore(placeholder, draggingElement.nextSibling);
+        Object.assign(draggingElement.style, { width: rect.width + 'px', left: rect.left + 'px', top: rect.top + 'px' });
+        const move = ev => {
+            draggingElement.style.left = (ev.clientX - offsetX) + 'px';
+            draggingElement.style.top = (ev.clientY - offsetY) + 'px';
+            const col = document.elementsFromPoint(ev.clientX, ev.clientY).find(el => el.classList.contains('category-column'));
+            if (col && col === startColumn) {
+                const after = [...col.querySelectorAll('.phrase-card:not(.dragging)')].find(c => ev.clientY < c.getBoundingClientRect().top + c.offsetHeight / 2);
+                col.insertBefore(placeholder, after || null);
+            }
+        };
+        const up = () => {
+            placeholder.parentNode.insertBefore(draggingElement, placeholder);
+            draggingElement.classList.remove('dragging');
+            Object.assign(draggingElement.style, { position: '', width: '', left: '', top: '' });
+            placeholder.remove();
+            saveState();
+            setTimeout(() => { isDragging = false; startColumn = null; }, 50);
+            document.removeEventListener('mousemove', move);
+            document.removeEventListener('mouseup', up);
+        };
+        document.addEventListener('mousemove', move);
+        document.addEventListener('mouseup', up);
+    });
+</script>
+</body>
+
+</html>
